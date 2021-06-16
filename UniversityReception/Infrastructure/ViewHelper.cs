@@ -208,7 +208,7 @@ namespace UniversityReception.Helpers
             view.DataSource = dt;
         }
 
-        internal static void InsertFieldsOfMarticulant(MarticulantForm form, Marticulant marticulant)
+        internal static void InsertDataOfMarticulant(MarticulantForm form, Marticulant marticulant)
         {
             marticulant.FullNameOfMarticulant = form.textBoxFullNameOfMarticulant.Text;
             marticulant.PassportCode = form.textBoxCodeOfPassport.Text;
@@ -232,6 +232,7 @@ namespace UniversityReception.Helpers
             marticulant.PhoneNumber = form.textBoxPhoneNumber.Text;
             try
             {
+                marticulant.MiddleScore = Convert.ToInt32(form.domainUpDownMiddleScore.Text);
                 marticulant.YearOfEndingEducation = new DateTime(int.Parse(form.domainUpDownYearOfEndingEducation.Text), 7, 1);
                 marticulant.LevelOfEducation = form.comboBoxLevelOfEducation.SelectedItem.ToString();
             }

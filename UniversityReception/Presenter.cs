@@ -122,7 +122,7 @@ namespace UniversityReception
                 Speciality sp = db.Specialities.FirstOrDefault(s => s.SpecialityName == spName);
                 var anotherSp = db.Specialities.Include("Marticulants").Where(s => s.SpecialityName != spName).ToList();
                 sp.RecievedClaims--;
-                Marticulant mr = sp.Marticulants.FirstOrDefault(m => m.MarticulantId == id.Value);
+                Marticulant mr = sp.Marticulants.Find(m => m.MarticulantId == id.Value);//
                 mr.SelectedSpeciality = spName;
                 mr.AdmittedToLearning = true;
                 mr.DateOfAdmittingToLearning = DateTime.Now.Date;
@@ -136,11 +136,9 @@ namespace UniversityReception
                         spc.Marticulants.Remove(mrtc);
                     }
                 }
-
                 db.SaveChanges();
                 await ViewHelper.UpdateDataMarticulantsAsync(mainForm, db);
                 ViewHelper.PrintInfoMesage($"Абітурієнта {mr.FullNameOfMarticulant} зараховано.");
-                return;
             }
         }
 
@@ -154,13 +152,14 @@ namespace UniversityReception
             marticulantForm.listBoxSpecialities.Items.Clear();
             marticulantForm.dataGridViewThemesForMarticulant.DataSource = null;
         }
-
+        #region Formula
         //        Формула має наступний вигляд:
         //КБ = (K1* П1 + K2* П2 + K3* П3 + K4* П4 + K5*А), де:
         //-  КБ – конкурсний бал абітурієнта;
         //·  П1, П2, П3, П4 - результати Сертифікатів ЗНО з предмету 1, з предмету 2, з предмету 3 та з предмету 4
         //(предмет 4 може буде замінений на конкурс творчих або фізичних здібностей);
-        //·  А - середній бал абітурієнта в документі про здобуття повної загальної середньої освіти(звичайно атестату);
+        //·  А - середній бал абітурієнта в документі про здобуття повної загальної середньої освіти(звичайно атестату); 
+        #endregion
         private async void MarticulantForm_saveNewMarticulantClick(object sender, EventArgs e)
         {
             var resultsTable = marticulantForm.dataGridViewThemesForMarticulant.DataSource as DataTable;
@@ -170,40 +169,32 @@ namespace UniversityReception
                 return;
             }
             Marticulant marticulant = new Marticulant();
-            ViewHelper.InsertFieldsOfMarticulant(marticulantForm, marticulant);
-
-            List<string> spFromListBox = new List<string>();
             Dictionary<string, int> themesValues = new Dictionary<string, int>();
-            int middleScore = Convert.ToInt32(marticulantForm.domainUpDownMiddleScore.Text);
-            List<int> allScores = new List<int>();
 
-            foreach (var item in marticulantForm.listBoxSpecialities.Items)
-            {
-                spFromListBox.Add(item.ToString());
-            }
+            ViewHelper.InsertDataOfMarticulant(marticulantForm, marticulant);
+            HashSet<string> spFromListBox = marticulantForm.listBoxSpecialities.Items.Cast<string>().ToHashSet();
+
             foreach (DataRow item in resultsTable.Rows)
             {
                 try
                 {
-                    allScores.Add(Convert.ToInt32(item["Оцінка"]));
+                    themesValues.Add(item["Предмет"].ToString(), Convert.ToInt32(item["Оцінка"]));
                 }
                 catch (FormatException ex)
                 {
                     ViewHelper.PrintWarningError("Невірний формат даних.\n" + ex.Message);
+                    themesValues.Clear();
                     return;
                 }
-                themesValues.Add(item["Предмет"].ToString(), Convert.ToInt32(item["Оцінка"]));
             }
-            marticulant.SumScore = allScores.Select(s => s).Sum() + middleScore;
-            marticulant.MiddleScore = middleScore;
-            var selectedSpecialities = new HashSet<string>(spFromListBox);
-            List<Speciality> filteredSpecialities = db.Specialities.Include("Themes").Where(s => selectedSpecialities.Contains(s.SpecialityName)).ToList();
-            foreach (Speciality s in filteredSpecialities)
+            marticulant.SumScore = themesValues.Values.Sum() + marticulant.MiddleScore;
+            IEnumerable<Speciality> selectedSpecialities = db.Specialities.Include("Themes").Where(s => spFromListBox.Contains(s.SpecialityName));
+            foreach (Speciality s in selectedSpecialities)
             {
-                int result = m.CalculateScores(s, themesValues, middleScore);
+                int result = m.CalculateScores(s, themesValues, marticulant.MiddleScore);
                 if (result >= s.PassingScore)
                 {
-                    Speciality ss = db.Specialities.FirstOrDefault(spc => spc.SpecialityId == s.SpecialityId);
+                    Speciality ss = db.Specialities.Find(s.SpecialityId);
                     marticulant.DateOfClaim = DateTime.Now.Date;
                     ss.Marticulants.Add(marticulant);
                     ss.RecievedClaims++;
