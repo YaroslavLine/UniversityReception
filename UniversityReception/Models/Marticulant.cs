@@ -36,6 +36,8 @@ namespace UniversityReception.Models
         public string PhoneNumberOfClosePerson { get; set; }
         public bool AdmittedToLearning { get; set; }
         public List<Speciality> Specialities { get; set; }
+        //public int SpecialityId { get; set; }
+        //public Speciality Speciality { get; set; }
         public int MiddleScore { get; internal set; }
         public string SelectedSpeciality { get; internal set; }
 

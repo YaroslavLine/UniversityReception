@@ -144,3 +144,4 @@ E:\FP_UniversityReception\UniversityReception\obj\Debug\UniversityReception.cspr
 E:\FP_UniversityReception\UniversityReception\obj\Debug\UniversityReception.csproj.CopyComplete
 E:\FP_UniversityReception\UniversityReception\obj\Debug\UniversityReception.exe
 E:\FP_UniversityReception\UniversityReception\obj\Debug\UniversityReception.pdb
+e:\FP_UniversityReception\UniversityReception\obj\Debug\UniversityReception.csproj.AssemblyReference.cache

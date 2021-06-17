@@ -145,8 +145,7 @@ namespace UniversityReception.Helpers
             view.Columns[5].HeaderText = "Бюджетна форма оплати";
             view.Columns[6].HeaderText = "Наявність пільг";
 
-            for (int i = 7; i < 29; i++)
-                view.Columns[i].Visible = false;
+            for (int i = 7; i < view.ColumnCount; i++) view.Columns[i].Visible = false;
         }
 
         internal static Task UpdateDataMarticulantsAsync(MainForm form, DbContext db)

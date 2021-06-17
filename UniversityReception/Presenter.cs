@@ -124,6 +124,7 @@ namespace UniversityReception
                 sp.RecievedClaims--;
                 Marticulant mr = sp.Marticulants.Find(m => m.MarticulantId == id.Value);//
                 mr.SelectedSpeciality = spName;
+                //mr.SpecialityId = sp.SpecialityId;//
                 mr.AdmittedToLearning = true;
                 mr.DateOfAdmittingToLearning = DateTime.Now.Date;
 
@@ -226,8 +227,6 @@ namespace UniversityReception
 
         private void MainForm_addNewMarticulantClick(object sender, EventArgs e)
         {
-            marticulantForm.comboBoxSelectFaculty.Items.Clear();
-            marticulantForm.comboBoxSelectSpeciality.Items.Clear();
             marticulantForm.ShowDialog();
         }
 
@@ -336,7 +335,7 @@ namespace UniversityReception
                 speciality.SpecialityCode = specialityForm.textBoxCodeOfSpeciality.Text;
                 speciality.ShortSpecialityName = specialityForm.textBoxShortNameOfSpeciality.Text;
                 speciality.Themes.AddRange(list);
-                speciality.Coefficient = 1 / (Convert.ToDouble(list.Count) + 1);
+                speciality.Coefficient = Math.Round(1 / (Convert.ToDouble(list.Count) + 1), 2);
                 //faculty.Specialities.Add(speciality);
                 speciality.FacultyId = faculty.FacultyId;
                 db.Specialities.Add(speciality);

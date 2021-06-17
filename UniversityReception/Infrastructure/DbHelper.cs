@@ -166,7 +166,6 @@ namespace UniversityReception.Models
                 ViewHelper.PrintCriticalError("Помилка отримання id студента.\n" + ex.Message);
                 return;
             }
-
         }
 
         internal void InsertLevelOfEducationIntoDbAsync(EducationLevel newLevel, DbContext db)
@@ -206,18 +205,15 @@ namespace UniversityReception.Models
                 ViewHelper.PrintCriticalError("Помилка при видаленні об'єкта\n" + ex.Message);
             }
         }
-        internal int CalculateScores(Speciality s, Dictionary<string, int> themesValues, int middleScore)
+        internal int CalculateScores(Speciality speciality, Dictionary<string, int> themesValues, int middleScore)
         {
-            double coef = s.Coefficient;
+            double coef = speciality.Coefficient;
             double result = 0;
-            foreach (var item in themesValues)
+            foreach (Theme t in speciality.Themes)
             {
-                foreach (var sp in s.Themes)
+                if (themesValues.Keys.Contains(t.ThemeName))
                 {
-                    if (sp.ThemeName == item.Key)
-                    {
-                        result += Convert.ToDouble(item.Value * coef);
-                    }
+                    result += Convert.ToDouble(themesValues[t.ThemeName] * coef);
                 }
             }
             result += Convert.ToDouble(middleScore) * coef;
