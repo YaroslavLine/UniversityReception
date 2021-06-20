@@ -732,6 +732,7 @@ namespace UniversityReception
             this.Controls.Add(this.groupBoxMainData);
             this.Name = "MarticulantForm";
             this.Text = "Новий абітурієнт";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MarticulantForm_FormClosing);
             this.Load += new System.EventHandler(this.MarticulantForm_Load);
             this.groupBoxMainData.ResumeLayout(false);
             this.groupBoxMainData.PerformLayout();

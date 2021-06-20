@@ -20,7 +20,7 @@ namespace UniversityReception
         SpecialityForm specialityForm;
         ThemeForm themeForm;
         MarticulantForm marticulantForm;
-        DbHelper m;
+        DbHelper dbHelper;
 
         static int editElementId;
         static bool isEdit;
@@ -28,7 +28,7 @@ namespace UniversityReception
         {
             this.loginForm = loginForm;
             this.mainForm = mainForm;
-            m = new DbHelper();
+            dbHelper = new DbHelper();
             db = new DbContext();
             editUserForm = new EditUserForm();
             facultyForm = new FacultyForm();
@@ -64,7 +64,6 @@ namespace UniversityReception
             this.mainForm.addEducationClick += MainForm_addEducationClick;
             this.mainForm.deleteEducationClick += MainForm_deleteEducationClick;
 
-            this.mainForm.deleteEducationClick += MainForm_deleteEducationClick;
             this.mainForm.selectedFacultyChanged += MainForm_selectedFacultyChanged;
             this.mainForm.comboBoxSpecMartChanged += MainForm_comboBoxSpecMartChanged;
 
@@ -81,17 +80,24 @@ namespace UniversityReception
             this.marticulantForm.specialityToListClick += MarticulantForm_specialityToListClick;
             this.marticulantForm.saveNewMarticulantClick += MarticulantForm_saveNewMarticulantClick;
             this.marticulantForm.resetMarticulantClick += MarticulantForm_resetMarticulantClick;
+            this.marticulantForm.closingFormMarticulant += MarticulantForm_closingFormMarticulant;
+        }
+
+        private void MarticulantForm_closingFormMarticulant(object sender, EventArgs e)
+        {
+            marticulantForm.comboBoxSelectFaculty.Text = "Оберіть факультет";
         }
 
         private async void MainForm_buttonDeleteStudentClick(object sender, EventArgs e)
         {
-            int id = m.GetSelectedId(mainForm.dataGridViewStudents, "MarticulantId");
+            int id = dbHelper.GetSelectedId(mainForm.dataGridViewStudents, "MarticulantId");
             if (id == -1) return;
             string spName = mainForm.comboBoxSelectSpecialitiesStudents.SelectedItem.ToString() ?? "Оберіть";
             if (!spName.Contains("Оберіть"))
             {
-                m.DeleteStudent(id, spName, db);
+                await dbHelper.DeleteStudentAsync(id, spName, db);
                 await ViewHelper.UpdateTableStudentsAsync(mainForm, db);
+                ViewHelper.PrintInfoMesage($"Студент видалений");
             }
         }
 
@@ -107,30 +113,30 @@ namespace UniversityReception
 
         private async void MainForm_deleteMarticulantClick(object sender, EventArgs e)
         {
-            int id = m.GetSelectedId(mainForm.dataGridViewMarticulants, "MarticulantId");
+            int id = dbHelper.GetSelectedId(mainForm.dataGridViewMarticulants, "MarticulantId");
             string spName = mainForm.comboBoxSelectSpecialityMart.Text;
-            m.DeleteMarticulantAsync(id, spName, db);
+            await dbHelper.DeleteMarticulantAsync(id, spName, db);
             await ViewHelper.UpdateDataMarticulantsAsync(mainForm, db);
+            ViewHelper.PrintInfoMesage("Абітурієнта видалено");
         }
 
         private async void MainForm_attemptMarticulantClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewMarticulants, "MarticulantId");
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewMarticulants, "MarticulantId");
             string spName = mainForm.comboBoxSelectSpecialityMart.Text;
-            if (id != null && id.Value >= 0)
+            if (id != null && id.Value > 0)
             {
                 Speciality sp = db.Specialities.FirstOrDefault(s => s.SpecialityName == spName);
-                var anotherSp = db.Specialities.Include("Marticulants").Where(s => s.SpecialityName != spName).ToList();
                 sp.RecievedClaims--;
-                Marticulant mr = sp.Marticulants.Find(m => m.MarticulantId == id.Value);//
+                List<Speciality> anotherSp = db.Specialities.Include("Marticulants").Where(s => s.SpecialityName != spName).ToList();
+                Marticulant mr = sp.Marticulants.Find(m => m.MarticulantId == id.Value);
                 mr.SelectedSpeciality = spName;
-                //mr.SpecialityId = sp.SpecialityId;//
                 mr.AdmittedToLearning = true;
                 mr.DateOfAdmittingToLearning = DateTime.Now.Date;
 
-                foreach (var spc in anotherSp)
+                foreach (Speciality spc in anotherSp)
                 {
-                    var mrtc = spc.Marticulants.Where(m => m.MarticulantId == id).FirstOrDefault();
+                    Marticulant mrtc = spc.Marticulants.Find(m => m.MarticulantId == id);
                     if (mrtc != null)
                     {
                         spc.RecievedClaims--;
@@ -169,11 +175,12 @@ namespace UniversityReception
                 ViewHelper.PrintWarningError("Не всі дані отримано!");
                 return;
             }
+
             Marticulant marticulant = new Marticulant();
             Dictionary<string, int> themesValues = new Dictionary<string, int>();
-
             ViewHelper.InsertDataOfMarticulant(marticulantForm, marticulant);
             HashSet<string> spFromListBox = marticulantForm.listBoxSpecialities.Items.Cast<string>().ToHashSet();
+            IEnumerable<Speciality> selectedSpecialities = db.Specialities.Include("Themes").Where(s => spFromListBox.Contains(s.SpecialityName));
 
             foreach (DataRow item in resultsTable.Rows)
             {
@@ -188,11 +195,12 @@ namespace UniversityReception
                     return;
                 }
             }
+
             marticulant.SumScore = themesValues.Values.Sum() + marticulant.MiddleScore;
-            IEnumerable<Speciality> selectedSpecialities = db.Specialities.Include("Themes").Where(s => spFromListBox.Contains(s.SpecialityName));
+
             foreach (Speciality s in selectedSpecialities)
             {
-                int result = m.CalculateScores(s, themesValues, marticulant.MiddleScore);
+                int result = dbHelper.CalculateScores(s, themesValues, marticulant.MiddleScore);
                 if (result >= s.PassingScore)
                 {
                     Speciality ss = db.Specialities.Find(s.SpecialityId);
@@ -243,9 +251,11 @@ namespace UniversityReception
 
         private async void MainForm_deleteEducationClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewEduLevels, "EducationLevelId");
-            m.DeleteEduLevel(id, db);
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewEduLevels, "EducationLevelId");
+            await dbHelper.DeleteEduLevelAsync(id, db);
             await ViewHelper.UpdateTableEducationAsync(mainForm.dataGridViewEduLevels, db);
+            ViewHelper.PrintInfoMesage("Об'єкт видалено");
+
         }
 
         private async void MainForm_addEducationClick(object sender, EventArgs e)
@@ -255,7 +265,7 @@ namespace UniversityReception
             if (!string.IsNullOrEmpty(l) && !string.IsNullOrEmpty(sL) && !string.IsNullOrWhiteSpace(l) && !string.IsNullOrWhiteSpace(sL))
             {
                 EducationLevel level = new EducationLevel { LevelOfEducation = l, ShortLevelOfEducation = sL };
-                m.InsertLevelOfEducationIntoDbAsync(level, db);
+                dbHelper.InsertLevelOfEducationIntoDb(level, db);
                 await ViewHelper.UpdateTableEducationAsync(mainForm.dataGridViewEduLevels, db);
 
                 return;
@@ -265,50 +275,22 @@ namespace UniversityReception
 
         private async void MainForm_deleteSpecialityClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewSpecialities, "SpecialityId");
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewSpecialities, "SpecialityId");
             if (id.HasValue)
             {
-                Speciality speciality = db.Specialities.FirstOrDefault(s => s.SpecialityId == id.Value);
-                db.Specialities.Remove(speciality);
-                await db.SaveChangesAsync();
+                await dbHelper.DeleteSpecialityAsync(id, db);
                 await ViewHelper.UpdateTableSpecialitiesAsync(mainForm.dataGridViewSpecialities, db);
                 ViewHelper.PrintInfoMesage("Запис видалено");
-                return;
             }
-            ViewHelper.PrintCriticalError("Запис не знайдено");
         }
 
         private async void SpecialityForm_saveSpecialityClick(object sender, EventArgs e)
         {
-            foreach (var t in specialityForm.groupBoxSpecialityFields.Controls)
+            if (!ViewHelper.CheckControls(specialityForm))
             {
-                if (t is TextBox)
-                {
-                    TextBox tb = t as TextBox;
-                    if (string.IsNullOrEmpty(tb.Text) || string.IsNullOrWhiteSpace(tb.Text))
-                    {
-                        ViewHelper.PrintWarningError("Заповніть всі поля");
-                        return;
-                    }
-                }
-            }
-            if (specialityForm.listBoxThemes.Items.Count == 0)
-            {
-                ViewHelper.PrintWarningError("Оберіть предмети");
+                ViewHelper.PrintWarningError("Заповніть всі поля");
                 return;
             }
-            try
-            {
-                Convert.ToInt32(specialityForm.textBoxAvailableCount.Text);
-                Convert.ToInt32(specialityForm.textBoxPassingScore.Text);
-            }
-            catch (Exception ex)
-            {
-                ViewHelper.PrintWarningError("Невірно введене число.\n" + ex.Message);
-                return;
-            }
-            // end of checking ^^^^^^
-
 
             List<Theme> list = new List<Theme>();
             foreach (var item in specialityForm.listBoxThemes.Items)
@@ -319,18 +301,10 @@ namespace UniversityReception
             if (faculty != null && list != null)
             {
                 Speciality speciality = new Speciality();
-                try
-                {
-                    speciality.PrivelegesCount = Convert.ToInt32(specialityForm.textBoxCountOfPrivileges.Text);
-                    speciality.Open = Convert.ToInt32(specialityForm.textBoxAvailableCount.Text);
-                    speciality.PassingScore = Convert.ToInt32(specialityForm.textBoxPassingScore.Text);
-                    speciality.CompetitionPlaceCount = Convert.ToInt32(specialityForm.textBoxCompetitionCount.Text);
-                }
-                catch (FormatException ex)
-                {
-                    ViewHelper.PrintWarningError("Невірний формат даних\n" + ex.Message);
-                    return;
-                }
+                speciality.PrivelegesCount = Convert.ToInt32(specialityForm.textBoxCountOfPrivileges.Text);
+                speciality.Open = Convert.ToInt32(specialityForm.textBoxAvailableCount.Text);
+                speciality.PassingScore = Convert.ToInt32(specialityForm.textBoxPassingScore.Text);
+                speciality.CompetitionPlaceCount = Convert.ToInt32(specialityForm.textBoxCompetitionCount.Text);
                 speciality.SpecialityName = specialityForm.textBoxNameOfSpeciality.Text;
                 speciality.SpecialityCode = specialityForm.textBoxCodeOfSpeciality.Text;
                 speciality.ShortSpecialityName = specialityForm.textBoxShortNameOfSpeciality.Text;
@@ -370,13 +344,12 @@ namespace UniversityReception
             }
             ViewHelper.PrintWarningError("Предмети відсутні");
         }
-
         private async void ThemeForm_saveChangesClick(object sender, EventArgs e)
         {
             string name = themeForm.textBoxEditThemeName.Text;
             if (!string.IsNullOrEmpty(name))
             {
-                m.UpdateThemeIntoDb(editElementId, name, db);
+                dbHelper.UpdateThemeIntoDb(editElementId, name, db);
                 await ViewHelper.UpdateTableThemesAsync(mainForm.dataGridViewThemes, db);
                 themeForm.Hide();
                 editElementId = -1;
@@ -387,7 +360,7 @@ namespace UniversityReception
 
         private void MainForm_editThemeClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewThemes, "ThemeId");
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewThemes, "ThemeId");
             if (id.HasValue)
             {
                 editElementId = id.Value;
@@ -404,14 +377,13 @@ namespace UniversityReception
 
         private async void MainForm_deleteThemeClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewThemes, "ThemeId");
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewThemes, "ThemeId");
             if (id.HasValue)
             {
-                m.DeleteTheme(id, db);
+                await dbHelper.DeleteThemeAsync(id, db);
                 await ViewHelper.UpdateTableThemesAsync(mainForm.dataGridViewThemes, db);
-                return;
+                ViewHelper.PrintInfoMesage("Предмет видалено");
             }
-            ViewHelper.PrintCriticalError("Об'єкт не знайдено");
         }
 
         private async void MainForm_addThemeClick(object sender, EventArgs e)
@@ -419,7 +391,7 @@ namespace UniversityReception
             string theme = mainForm.textBoxNewTheme.Text;
             if (!string.IsNullOrEmpty(theme))
             {
-                m.InsertThemeIntoDb(new Theme { ThemeName = theme }, db);
+                dbHelper.InsertThemeIntoDb(new Theme { ThemeName = theme }, db);
                 await ViewHelper.UpdateTableThemesAsync(mainForm.dataGridViewThemes, db);
                 return;
             }
@@ -427,22 +399,18 @@ namespace UniversityReception
         }
 
         #region Faculties
-        private void MainForm_deleteFacultyClick(object sender, EventArgs e)
+        private async void MainForm_deleteFacultyClick(object sender, EventArgs e)
         {
-            int? id = m.GetSelectedId(mainForm.dataGridViewFaculties, "FacultyId");
-            if (id.HasValue)
-            {
-                m.DeleteFaculty(id, db);
-                ViewHelper.UpdateTableFacultiesAsync(mainForm.dataGridViewFaculties, db);
-                ViewHelper.UpdateTableSpecialitiesAsync(mainForm.dataGridViewSpecialities, db);
-                return;
-            }
-            ViewHelper.PrintCriticalError("Запис для видалення не знайдено");
+            int? id = dbHelper.GetSelectedId(mainForm.dataGridViewFaculties, "FacultyId");
+            await dbHelper.DeleteFacultyAsync(id, db);
+            await ViewHelper.UpdateTableFacultiesAsync(mainForm.dataGridViewFaculties, db);
+            await ViewHelper.UpdateTableSpecialitiesAsync(mainForm.dataGridViewSpecialities, db);
+            ViewHelper.PrintInfoMesage("Запис видалено");
         }
 
         private void MainForm_editFacultyClick(object sender, EventArgs e)
         {
-            int selectedRow = m.GetSelectedId(mainForm.dataGridViewFaculties, "FacultyId");
+            int selectedRow = dbHelper.GetSelectedId(mainForm.dataGridViewFaculties, "FacultyId");
             Faculty f = db.Faculties.FirstOrDefault(ff => ff.FacultyId == selectedRow);
             if (f != null)
             {
@@ -479,7 +447,7 @@ namespace UniversityReception
                     FacultyCode = facultyForm.codeOfFacultyTextBox.Text,
                     ShortFacultyName = facultyForm.ShortNameOfFacultyTextBox.Text
                 };
-                m.InsertFacultyIntoDb(faculty, db);
+                dbHelper.InsertFacultyIntoDb(faculty, db);
             }
             else
             {
@@ -490,7 +458,7 @@ namespace UniversityReception
                     faculty.FacultyName = facultyForm.nameOfFacultyTextBox.Text;
                     faculty.FacultyCode = facultyForm.codeOfFacultyTextBox.Text;
                     faculty.ShortFacultyName = facultyForm.ShortNameOfFacultyTextBox.Text;
-                    m.UpdateFacultyIntoDb(faculty, db);
+                    dbHelper.UpdateFacultyIntoDb(faculty, db);
                     editElementId = 0;
                     isEdit = false;
                 }
@@ -510,7 +478,7 @@ namespace UniversityReception
         #region Users
         private void MainForm_changeUserClick(object sender, EventArgs e)
         {
-            int id = m.GetSelectedId(mainForm.dataGridViewUsers, "UserId");
+            int id = dbHelper.GetSelectedId(mainForm.dataGridViewUsers, "UserId");
             editElementId = id;
             User user = db.Users.Include("UserRole").Where(u => u.UserId == id).FirstOrDefault();
             if (user != null)
@@ -646,7 +614,6 @@ namespace UniversityReception
             loginForm.textBoxLogin.Text = string.Empty;
             loginForm.textBoxPassword.Text = string.Empty;
         }
-
 
         private void LoginForm_buttonLoginClick(object sender, EventArgs e)
         {

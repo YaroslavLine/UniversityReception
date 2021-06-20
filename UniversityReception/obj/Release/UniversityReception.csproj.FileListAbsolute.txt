@@ -147,7 +147,6 @@ F:\FP_UniversityReception\UniversityReception\bin\Release\EntityFramework.dll
 F:\FP_UniversityReception\UniversityReception\bin\Release\EntityFramework.SqlServer.dll
 F:\FP_UniversityReception\UniversityReception\bin\Release\EntityFramework.xml
 F:\FP_UniversityReception\UniversityReception\bin\Release\EntityFramework.SqlServer.xml
-F:\FP_UniversityReception\UniversityReception\obj\Release\UniversityReception.csproj.AssemblyReference.cache
 F:\FP_UniversityReception\UniversityReception\obj\Release\UniversityReception.FacultyForm.resources
 F:\FP_UniversityReception\UniversityReception\obj\Release\UniversityReception.EditUserForm.resources
 F:\FP_UniversityReception\UniversityReception\obj\Release\UniversityReception.LoginForm.resources

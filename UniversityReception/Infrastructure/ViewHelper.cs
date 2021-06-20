@@ -179,26 +179,19 @@ namespace UniversityReception.Helpers
 
         internal static void UpdateTableThemesForAttempting(ListBox.ObjectCollection specialities, DataGridView view, DbContext db)
         {
-            List<string> sList = new List<string>();
+            HashSet<string> selectedSpecialities = new HashSet<string>(specialities.Cast<string>());
             List<Theme> tList = new List<Theme>();
-            Dictionary<string, int> scores = new Dictionary<string, int>();
             DataTable dt = new DataTable();
             dt.Columns.Add("Предмет");
             dt.Columns.Add("Оцінка");
             dt.Columns[0].ReadOnly = true;
-            foreach (var item in specialities)
+            List<Speciality> fs = db.Specialities.Include("Themes").Where(s => selectedSpecialities.Contains(s.SpecialityName)).ToList();
+            foreach (Speciality s in fs)
             {
-                sList.Add(item.ToString());
+                tList.AddRange(s.Themes);
             }
-            var selectedSpecialities = new HashSet<string>(sList);
-            var fs = db.Specialities.Include("Themes").Where(s => selectedSpecialities.Contains(s.SpecialityName)).ToList();
-            foreach (var s in fs)
-            {
-                tList.AddRange(s.Themes.Select(t => t));
 
-            }
-            //scores.Add("Biology", 15);
-            var themes = tList.GroupBy(t => t.ThemeName).ToList();
+            var themes = tList.GroupBy(t => t.ThemeName);
 
             foreach (var item in themes)
             {
@@ -238,6 +231,7 @@ namespace UniversityReception.Helpers
             catch (FormatException ex)
             {
                 PrintWarningError("Невірний формат даних\n" + ex.Message);
+                return;
             }
         }
 
@@ -245,12 +239,13 @@ namespace UniversityReception.Helpers
         {
             try
             {
+                cb.Items.Clear();
                 cb.Items.AddRange(db.EducationLevels.Select(l => l.LevelOfEducation).ToArray());
                 return Task.CompletedTask;
             }
             catch (Exception ex)
             {
-                PrintWarningError("Помилка при оттриманні рівнів освіти.\n" + ex.Message);
+                PrintWarningError("Помилка при отриманні рівнів освіти.\n" + ex.Message);
                 return Task.CompletedTask;
             }
         }
@@ -291,7 +286,42 @@ namespace UniversityReception.Helpers
             }
             return true;
         }
+        internal static bool CheckControls(SpecialityForm form)
+        {
+            foreach (var tb in form.groupBoxSpecialityFields.Controls)
+            {
+                if (tb is TextBox)
+                {
+                    TextBox t = tb as TextBox;
+                    if (string.IsNullOrEmpty(t.Text) || string.IsNullOrWhiteSpace(t.Text))
+                    {
+                        return false;
+                    }
+                }
+            }
+            if (form.listBoxThemes.Items.Count == 0)
+            {
+                return false;
+            }
 
+            try
+            {
+                Convert.ToInt32(form.textBoxAvailableCount.Text);
+                Convert.ToInt32(form.textBoxPassingScore.Text);
+                Convert.ToInt32(form.textBoxCompetitionCount.Text);
+                Convert.ToInt32(form.textBoxCountOfPrivileges.Text);
+            }
+            catch (Exception ex)
+            {
+                form.textBoxCompetitionCount.Clear();
+                form.textBoxCountOfPrivileges.Clear();
+                form.textBoxAvailableCount.Clear();
+                form.textBoxPassingScore.Clear();
+                ViewHelper.PrintWarningError("Невірно введене число.\n" + ex.Message);
+                return false;
+            }
+            return true;
+        }
         internal static void UpdateViews(MainForm form, DbContext db)
         {
             form.rolesCombobox.DataSource = db.Roles.Select(r => r.RoleName).ToList();

@@ -35,7 +35,7 @@ namespace UniversityReception.Models
                 ViewHelper.PrintCriticalError("Помилка при редагуванні запису. " + ex.Message);
             }
         }
-        public void DeleteFaculty(int? id, DbContext db)
+        public Task DeleteFacultyAsync(int? id, DbContext db)
         {
             if (id.HasValue)
             {
@@ -43,15 +43,16 @@ namespace UniversityReception.Models
                 {
                     Faculty faculty = db.Faculties.FirstOrDefault(f => f.FacultyId == id);
                     db.Faculties.Remove(faculty);
-                    db.SaveChangesAsync();
-                    ViewHelper.PrintInfoMesage("Запис видалено");
+                    db.SaveChanges();
+
                 }
                 catch (Exception ex)
                 {
                     ViewHelper.PrintCriticalError("Помилка при видаленні об'єкта\n" + ex.Message);
+                    return Task.CompletedTask;
                 }
-
             }
+            return Task.CompletedTask;
         }
         public int GetSelectedId(DataGridView view, string columnName)
         {
@@ -98,7 +99,7 @@ namespace UniversityReception.Models
                 ViewHelper.PrintCriticalError("Помилка при редагуванні запису. " + ex.Message);
             }
         }
-        internal void DeleteEduLevel(int? id, DbContext db)
+        internal Task DeleteEduLevelAsync(int? id, DbContext db)
         {
             if (id.HasValue)
             {
@@ -108,15 +109,16 @@ namespace UniversityReception.Models
                     if (level != null)
                     {
                         db.EducationLevels.Remove(level);
-                        db.SaveChangesAsync();
+                        db.SaveChanges();
                     }
-                    ViewHelper.PrintInfoMesage("Об'єкт видалено");
                 }
                 catch (Exception ex)
                 {
                     ViewHelper.PrintCriticalError("Помилка при видаленні об'екта.\n" + ex.Message);
+                    return Task.CompletedTask;
                 }
             }
+            return Task.CompletedTask;
         }
 
         internal Task DeleteMarticulantAsync(int id, string speciality, DbContext db)
@@ -129,25 +131,23 @@ namespace UniversityReception.Models
                     Marticulant mr = sp.Marticulants.FirstOrDefault(m => m.MarticulantId == id);
                     sp.Marticulants.Remove(mr);
                     sp.RecievedClaims--;
-                    db.SaveChangesAsync();
-                    ViewHelper.PrintInfoMesage("Абітурієнта видалено");
-                    return Task.CompletedTask;
+                    db.SaveChanges();
                 }
-                return Task.CompletedTask;
             }
             catch (Exception ex)
             {
                 ViewHelper.PrintCriticalError("Помилка при видаленні даних\n" + ex.Message);
                 return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
 
-        internal void DeleteStudent(int id, string speciality, DbContext db)
+        internal Task DeleteStudentAsync(int id, string speciality, DbContext db)
         {
             if (id == -1)
             {
                 ViewHelper.PrintCriticalError("Помилка отримання id студента");
-                return;
+                return Task.CompletedTask;
             }
             try
             {
@@ -156,19 +156,18 @@ namespace UniversityReception.Models
                 {
                     Marticulant mr = sp.Marticulants.FirstOrDefault(m => m.MarticulantId == id);
                     sp.Marticulants.Remove(mr);
-                    db.SaveChangesAsync();
-                    ViewHelper.PrintInfoMesage($"Студент {mr.FullNameOfMarticulant} видалений");
+                    db.SaveChanges();
                 }
-                return;
             }
             catch (Exception ex)
             {
                 ViewHelper.PrintCriticalError("Помилка отримання id студента.\n" + ex.Message);
-                return;
+                return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
 
-        internal void InsertLevelOfEducationIntoDbAsync(EducationLevel newLevel, DbContext db)
+        internal void InsertLevelOfEducationIntoDb(EducationLevel newLevel, DbContext db)
         {
             try
             {
@@ -176,7 +175,7 @@ namespace UniversityReception.Models
                 if (lev == null)
                 {
                     db.EducationLevels.Add(newLevel);
-                    db.SaveChangesAsync();
+                    db.SaveChanges();
                     ViewHelper.PrintInfoMesage("Об'єкт додано");
                     return;
                 }
@@ -188,7 +187,7 @@ namespace UniversityReception.Models
                 ViewHelper.PrintCriticalError("Помилка при додаванні запису.\n" + ex.Message);
             }
         }
-        internal void DeleteTheme(int? id, DbContext db)
+        internal Task DeleteThemeAsync(int? id, DbContext db)
         {
             try
             {
@@ -196,14 +195,15 @@ namespace UniversityReception.Models
                 if (theme != null)
                 {
                     db.Themes.Remove(theme);
-                    db.SaveChangesAsync();
-                    ViewHelper.PrintInfoMesage("Предмет видалено");
+                    db.SaveChanges();
                 }
             }
             catch (Exception ex)
             {
                 ViewHelper.PrintCriticalError("Помилка при видаленні об'єкта\n" + ex.Message);
+                return Task.CompletedTask;
             }
+            return Task.CompletedTask;
         }
         internal int CalculateScores(Speciality speciality, Dictionary<string, int> themesValues, int middleScore)
         {
@@ -218,6 +218,25 @@ namespace UniversityReception.Models
             }
             result += Convert.ToDouble(middleScore) * coef;
             return Convert.ToInt32(Math.Round(result));
+        }
+
+        internal Task DeleteSpecialityAsync(int? id, DbContext db)
+        {
+            try
+            {
+                Speciality speciality = db.Specialities.FirstOrDefault(s => s.SpecialityId == id.Value);
+                if (speciality != null)
+                {
+                    db.Specialities.Remove(speciality);
+                    db.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                ViewHelper.PrintCriticalError("Помилка при видаленні об'єкта\n" + ex.Message);
+                return Task.CompletedTask;
+            }
+            return Task.CompletedTask;
         }
     }
 }

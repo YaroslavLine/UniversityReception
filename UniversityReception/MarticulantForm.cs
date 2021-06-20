@@ -17,6 +17,7 @@ namespace UniversityReception
             InitializeComponent();
         }
         public event EventHandler openFormMarticulant = null;
+        public event EventHandler closingFormMarticulant = null;
         public event EventHandler selectedFacultyChangedMarticulantForm = null;
         public event EventHandler specialityToListClick = null;
         public event EventHandler saveNewMarticulantClick = null;
@@ -45,6 +46,11 @@ namespace UniversityReception
         private void buttonClearListBoxSpecialities_Click(object sender, EventArgs e)
         {
             resetMarticulantClick(sender,e);
+        }
+
+        private void MarticulantForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            closingFormMarticulant(sender,e);
         }
     }
 }
