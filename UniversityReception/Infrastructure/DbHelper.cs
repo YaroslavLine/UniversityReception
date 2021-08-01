@@ -15,7 +15,7 @@ namespace UniversityReception.Models
             try
             {
                 db.Faculties.Add(data);
-                db.SaveChangesAsync();
+                db.SaveChanges();
                 ViewHelper.PrintInfoMesage("Дані збережено");
             }
             catch (Exception ex)
@@ -27,7 +27,7 @@ namespace UniversityReception.Models
         {
             try
             {
-                db.SaveChangesAsync();
+                db.SaveChanges();
                 ViewHelper.PrintInfoMesage("Дані змінено");
             }
             catch (Exception ex)
@@ -44,7 +44,6 @@ namespace UniversityReception.Models
                     Faculty faculty = db.Faculties.FirstOrDefault(f => f.FacultyId == id);
                     db.Faculties.Remove(faculty);
                     db.SaveChanges();
-
                 }
                 catch (Exception ex)
                 {
@@ -128,9 +127,9 @@ namespace UniversityReception.Models
                 if (id >= 0 && !speciality.Contains("Оберіть"))
                 {
                     Speciality sp = db.Specialities.FirstOrDefault(s => s.SpecialityName == speciality);
-                    Marticulant mr = sp.Marticulants.FirstOrDefault(m => m.MarticulantId == id);
-                    sp.Marticulants.Remove(mr);
                     sp.RecievedClaims--;
+                    Marticulant m = db.Set<Marticulant>().Find(id);
+                    db.Set<Marticulant>().Remove(m);
                     db.SaveChanges();
                 }
             }
@@ -151,13 +150,9 @@ namespace UniversityReception.Models
             }
             try
             {
-                Speciality sp = db.Specialities.Include("Marticulants").FirstOrDefault(s => s.SpecialityName == speciality);
-                if (sp != null)
-                {
-                    Marticulant mr = sp.Marticulants.FirstOrDefault(m => m.MarticulantId == id);
-                    sp.Marticulants.Remove(mr);
-                    db.SaveChanges();
-                }
+                Marticulant m = db.Set<Marticulant>().Find(id);
+                db.Set<Marticulant>().Remove(m);
+                db.SaveChanges();
             }
             catch (Exception ex)
             {

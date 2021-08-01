@@ -16,7 +16,7 @@ namespace UniversityReception.Helpers
         }
         public static void PrintCriticalError(string message)
         {
-            MessageBox.Show(message, "Попередження", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show(message, "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
 
         public static void PrintInfoMesage(string message)
@@ -41,7 +41,7 @@ namespace UniversityReception.Helpers
         {
             try
             {
-                List<Faculty> list = db.Faculties.Select(f => f).ToList();
+                List<Faculty> list = db.Faculties.ToList();
                 view.DataSource = list;
                 return Task.CompletedTask;
             }
@@ -55,7 +55,7 @@ namespace UniversityReception.Helpers
         {
             try
             {
-                List<Theme> list = db.Themes.Select(t => t).ToList();
+                List<Theme> list = db.Themes.ToList();
                 view.DataSource = list;
                 return Task.CompletedTask;
             }
@@ -70,7 +70,7 @@ namespace UniversityReception.Helpers
         {
             try
             {
-                view.DataSource = db.Specialities.Select(s => s).ToList();
+                view.DataSource = db.Specialities.ToList();
                 return Task.CompletedTask;
             }
             catch (Exception ex)
@@ -84,7 +84,7 @@ namespace UniversityReception.Helpers
         {
             try
             {
-                view.DataSource = db.EducationLevels.Select(l => l).ToList();
+                view.DataSource = db.EducationLevels.ToList();
                 view.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
                 view.Columns[0].Visible = false;
                 return Task.CompletedTask;

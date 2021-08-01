@@ -310,9 +310,9 @@ namespace UniversityReception
                 speciality.ShortSpecialityName = specialityForm.textBoxShortNameOfSpeciality.Text;
                 speciality.Themes.AddRange(list);
                 speciality.Coefficient = Math.Round(1 / (Convert.ToDouble(list.Count) + 1), 2);
-                //faculty.Specialities.Add(speciality);
-                speciality.FacultyId = faculty.FacultyId;
-                db.Specialities.Add(speciality);
+                faculty.Specialities.Add(speciality);
+                //speciality.FacultyId = faculty.FacultyId;
+                //db.Specialities.Add(speciality);
                 db.SaveChanges();
                 await ViewHelper.UpdateTableSpecialitiesAsync(mainForm.dataGridViewSpecialities, db);
                 ViewHelper.PrintInfoMesage("Дані збережено");
